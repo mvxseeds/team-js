@@ -1,4 +1,7 @@
-import { getTrendMovies } from './api-fetch';
+// import { getTrendMovies } from './api-fetch';
+import { lskeys } from './ls-data';
+const { CRT_CONTENT } = lskeys;
+import { onLoadTrendsPage, getUpdatedData } from './page-content-loader';
 import { createMarkupOfTrendingMovies, galleryList, onFooterFixed, onFooterNoFixed } from './render-cards';
 import Pagination from 'tui-pagination';
 import 'tui-pagination/dist/tui-pagination.min.css';
@@ -20,10 +23,12 @@ const pagination = new Pagination(container, options);
 
 pagination.on('afterMove', async function (eventData) {
     var currentPage = eventData.page;
+    console.log(currentPage);
     galleryList.innerHTML = '';
     onFooterFixed();
     onSpinnerEnabled();
-    const data = await getTrendMovies(currentPage);
+
+    const data = await onLoadTrendsPage(currentPage);
     try {
         onSpinnerDisabled();
         createMarkupOfTrendingMovies(data);

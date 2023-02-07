@@ -5,7 +5,8 @@ const BASE_URL = 'https://api.themoviedb.org/3/';
 const API_KEY = 'e8d94f3e976148bda0a5c640d4df112b';
 export let currentPage = 1;
 
-export async function getTrendMovies(currentPage) {
+
+export async function getTrendMovies(currentPage=1) {
     try {
         onSpinnerEnabled();
         const response = await axios.get(`${BASE_URL}trending/movie/day?api_key=${API_KEY}&page=${currentPage}&media_type=movie`);
@@ -29,7 +30,7 @@ export async function getGenresMovies() {
     }
 }
 
-export async function getQueryMovies(userQuery, qPage = 1) {
+export async function getQueryMovies(userQuery, qPage=1) {
     try {
         const response = await axios.get(`${BASE_URL}search/movie`, {
             params: {

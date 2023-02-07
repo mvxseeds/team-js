@@ -1,42 +1,93 @@
 // *** PAGE CONTENT LOAD *** //
 
 // import localStorage getter, setter and keys
+import { getStorageData, setStorageData  } from "./ls-data";
 import { lskeys } from "./ls-data";
 const { GENRES, HOME_CONTENT, CRT_CONTENT, CRT_USER, TMP_QUEUE, TMP_WATCHED, STORAGE_USERS } = lskeys;
-import { getStorageData, setStorageData,  } from "./ls-data";
 
 // import movie content fetch fn
 import { getTrendMovies, getGenresMovies, getQueryMovies } from "./api-fetch";
 
 
-// fn check for key updates
-function updateKeys() {
-    // keys to handle
-    const processedKeys = [ ...Object.values(lskeys) ];
 
-    // if no user logged in - use temporary queue and watched
-    if (!isLoggedIn()) {
-        setStorageData(TMP_QUEUE, []);
-        setStorageData(TMP_WATCHED, []);
-    } else {
-        // else import any temp lib
-        importTempLibrary();
+// load critical data for page rendering
+// if storage is empty
+if (localStorage.length === 0) {
+    onFirstLoad();
+} 
+// load stored page content otherwise
+else {
+    onPageReload();
+}
+
+async function onFirstLoad() {
+    // repeating keyval setting may be replaced with config for ls-data
+    const genres = await getGenresMovies();
+    setStorageData(GENRES, genres);
+
+    let trends = await getTrendMovies();
+    trends = await addGenreNames(trends);
+
+    setStorageData(HOME_CONTENT, trends);
+    setStorageData(CRT_CONTENT, trends);
+    setStorageData(CRT_USER, 0);
+    setStorageData(STORAGE_USERS, []);
+    setStorageData(TMP_QUEUE, []);
+    setStorageData(TMP_WATCHED, []);
+
+    location.reload();
+}
+
+
+function onPageReload() {
+    if (isOnHomePage) {
+        const content = getStorageData(HOME_CONTENT);
+        setStorageData(CRT_CONTENT, content);
     }
-
-    // for each invalid (empty) key
-    // load value from api
-    processedKeys.forEach(key => {
-        if (!getStorageData(key)) {
-            loadPageContent(key); 
-        }
-    })
-
-};
-
-// run on page reload
-updateKeys();
+}
 
 
+export async function onLoadTrendsPage(page) {
+    try {
+        let movies = await getTrendMovies(page);
+        movies = await addGenreNames(movies);
+        setStorageData(CRT_CONTENT, movies);
+        return movies;
+    } 
+    catch (err) {
+        return console.error(err);
+    }
+}
+
+
+export async function onSearchMovies(query, page=1) {
+    try {
+        let movies = await getQueryMovies(query, page);
+        movies = await addGenreNames(movies);
+        setStorageData(CRT_CONTENT, movies);
+    } 
+    catch (err) {
+        return console.error(err);
+    }
+}
+
+
+export async function getUpdatedData(key) {
+    try {
+        const data = await getStorageData(key);
+        return data;
+    }
+    catch (err) {
+        return console.error(err);
+    }
+}
+
+
+
+
+
+
+// check if current page is home page
 export function isOnHomePage() {
     const currentPageURL = window.location.href;
     // home page urls and analogs
@@ -44,7 +95,7 @@ export function isOnHomePage() {
         // if hosted locally
         'http://localhost:1234/', 
         'http://localhost:1234/index.html',
-        // and if deployed
+        // if deployed
         'https://humbubahumbuba.github.io/team-js/',
         'https://humbubahumbuba.github.io/team-js/index.html'
     ];
@@ -52,65 +103,33 @@ export function isOnHomePage() {
     return HOME_URLS.includes(currentPageURL);
 }
 
-// load data from API to localStorage //
-async function loadPageContent(lsKey, page=1) {
-    let value;
 
-    if (lsKey === GENRES) {
-        value = await getGenresMovies();
-        setStorageData(lsKey, value);
-        return;
+
+// add genre names 
+async function addGenreNames(obj) {
+  const g = await getUpdatedData(GENRES);
+
+  obj.results.map(data => {
+    const ids = data.genre_ids;
+    const movieGenres = [];
+
+    g.forEach(genre => {
+      if (ids.includes(genre.id)) {
+        movieGenres.push(genre.name);
+      }
+    });
+
+    if (movieGenres.length > 2) {
+      data.genre_names = `${movieGenres[0]}, ${movieGenres[1]}, Other`;
+    } else {
+      data.genre_names = movieGenres.join(', ');
     }
 
-    if (lsKey === HOME_CONTENT) {
-        // home page content is default trends 1st page
-        value = await getTrendMovies(1);
-        setStorageData(lsKey, value);
-        return;
-    }
+  });
 
-    if (lsKey === CRT_CONTENT) {
-        // load home page content
-        // if current page is home page
-        if (isOnHomePage()) {
-            value = await getPromisedData(HOME_CONTENT);
-            setStorageData(lsKey, value);
-            return;
-        }
-
-        // add API query response handling
-        value = await getQueryMovies(query, page);
-        setStorageData(lsKey, value);  
-        return;      
-    }
-
-    value = await getStorageData(lsKey);
-    setStorageData(lsKey, value);
-    return;
+  return obj;
 }
-// end load //
 
-
-// export data from localStorage by key //
-// get promise data from ls
-export async function getPromisedData(key) {
-    let data = getStorageData(key);
-    try {
-        await new Promise(function (resolve) {
-            data = getStorageData(key);
-
-            setTimeout(function () {
-                resolve();
-            }, 1000);
-        });
-        data = getStorageData(key);
-        return data;
-    } 
-    catch (err) {
-        return console.error(err);
-    }
-}
-// end export //
 
 
 

@@ -2,25 +2,15 @@
 
 // const keys for localStorage
 export const lskeys = {
-  CRT_USER: 'current-user',
+  CRT_USER: 'crt-user',
   TMP_QUEUE: 'temp-queue',
   TMP_WATCHED: 'temp-watched',
   HOME_CONTENT: 'home-page-content',
-  CRT_CONTENT: 'current-page-content',
-  GENRES: 'movie-genres',
-  STORAGE_USERS: 'users-data',
+  CRT_CONTENT: 'crt-page-content',
+  GENRES: 'mov-genres',
+  STORAGE_USERS: 'app-users',
 };
 
-// initialize localStorage keys
-(function initLoad() {
-  if (localStorage.length === 0) {
-    localStorage.clear();
-
-    // create keys and assign values
-    const keys = Object.values(lskeys);
-    keys.map(key => localStorage.setItem(key, 0));
-  }
-})();
 
 // get data by key
 export function getStorageData(key) {
